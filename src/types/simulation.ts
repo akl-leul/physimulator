@@ -2,7 +2,26 @@ export type SimulationMode =
   | 'simple' 
   | 'double' 
   | 'damped' 
-  | 'spring';
+  | 'spring'
+  | 'coupled';
+
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  mode: SimulationMode;
+  application: string;
+  icon: string;
+  params: Partial<SimulationParams>;
+}
+
+export interface Application {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  relatedModes: SimulationMode[];
+}
 
 export interface SimulationState {
   angle: number;

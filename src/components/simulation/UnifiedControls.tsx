@@ -67,11 +67,11 @@ const UnifiedControls = ({
         </div>
 
         {/* Pendulum modes */}
-        {(mode === 'simple' || mode === 'double' || mode === 'damped') && (
+        {(mode === 'simple' || mode === 'double' || mode === 'damped' || mode === 'coupled') && (
           <>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="label">Length 1 (L₁)</span>
+                <span className="label">Length (L)</span>
                 <span className="data-value text-xs">{params.length.toFixed(1)} m</span>
               </div>
               <Slider
@@ -86,7 +86,7 @@ const UnifiedControls = ({
 
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="label">Mass 1 (m₁)</span>
+                <span className="label">Mass (m)</span>
                 <span className="data-value text-xs">{params.mass.toFixed(1)} kg</span>
               </div>
               <Slider
@@ -112,6 +112,56 @@ const UnifiedControls = ({
                 step={5}
                 disabled={isPlaying}
               />
+            </div>
+          </>
+        )}
+
+        {/* Coupled oscillators specific */}
+        {mode === 'coupled' && (
+          <>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="label">Angle 2 (θ₂)</span>
+                <span className="data-value text-xs">{radToDeg(params.angle2)}°</span>
+              </div>
+              <Slider
+                value={[params.angle2 * 180 / Math.PI]}
+                onValueChange={([v]) => onParamChange('angle2', v * Math.PI / 180)}
+                min={-120}
+                max={120}
+                step={5}
+                disabled={isPlaying}
+              />
+            </div>
+
+            <div className="border-t border-border pt-3 mt-3">
+              <span className="label text-xs">Coupling Spring</span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="label">Spring Const (k)</span>
+                <span className="data-value text-xs">{params.springConstant.toFixed(0)} N/m</span>
+              </div>
+              <Slider
+                value={[params.springConstant]}
+                onValueChange={([v]) => onParamChange('springConstant', v)}
+                min={1}
+                max={20}
+                step={1}
+                disabled={isPlaying}
+              />
+            </div>
+
+            <div className="stat-card text-xs space-y-1">
+              <div>
+                <span className="text-muted-foreground">Natural freq: </span>
+                <span className="data-value">{Math.sqrt(params.gravity / params.length).toFixed(2)} rad/s</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Normal modes: </span>
+                <span className="data-value">In-phase & Anti-phase</span>
+              </div>
             </div>
           </>
         )}

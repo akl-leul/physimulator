@@ -85,8 +85,8 @@ const DataPanel = ({ mode, state, params, isPlaying }: DataPanelProps) => {
           )}
         </div>
 
-        {/* Second pendulum for double mode */}
-        {mode === 'double' && state.angle2 !== undefined && (
+        {/* Second pendulum for double/coupled mode */}
+        {(mode === 'double' || mode === 'coupled') && state.angle2 !== undefined && (
           <div className="grid grid-cols-2 gap-3">
             <div className="stat-card">
               <span className="label block">Angle 2 (θ₂)</span>
