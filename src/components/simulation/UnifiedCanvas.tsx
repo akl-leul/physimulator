@@ -4,6 +4,7 @@ import SimplePendulum from './SimplePendulum';
 import DoublePendulum from './DoublePendulum';
 import DampedPendulum from './DampedPendulum';
 import MassSpring from './MassSpring';
+import CoupledOscillators from './CoupledOscillators';
 import { SimulationMode } from '@/types/simulation';
 
 interface UnifiedCanvasProps {
@@ -29,6 +30,7 @@ interface UnifiedCanvasProps {
   onDouble2Update: (state: { angle1: number; angle2: number; velocity1: number; velocity2: number }) => void;
   onDampedUpdate: (angle: number, velocity: number) => void;
   onSpringUpdate: (displacement: number, velocity: number) => void;
+  onCoupledUpdate: (state: { angle1: number; angle2: number; velocity1: number; velocity2: number }) => void;
   angularVelocityRef: React.MutableRefObject<number>;
   showChaosComparison?: boolean;
 }
@@ -43,23 +45,34 @@ const UnifiedCanvas = ({
   onDouble2Update,
   onDampedUpdate,
   onSpringUpdate,
+  onCoupledUpdate,
   angularVelocityRef,
   showChaosComparison = true,
 }: UnifiedCanvasProps) => {
-  const cameraPosition: [number, number, number] = mode === 'spring' ? [0, 0, 5] : [0, 0, 6];
-  const gridY = mode === 'spring' ? -0.5 : -params.length - (mode === 'double' ? params.length2 : 0) - 0.3;
+  const getCameraPosition = (): [number, number, number] => {
+    if (mode === 'spring') return [0, 0, 5];
+    if (mode === 'coupled') return [0, 0, 7];
+    return [0, 0, 6];
+  };
+
+  const getGridY = () => {
+    if (mode === 'spring') return -0.5;
+    if (mode === 'coupled') return -params.length - 0.3;
+    if (mode === 'double') return -params.length - params.length2 - 0.3;
+    return -params.length - 0.3;
+  };
 
   return (
     <div className="simulation-view w-full h-full">
       <Canvas>
-        <PerspectiveCamera makeDefault position={cameraPosition} fov={50} />
+        <PerspectiveCamera makeDefault position={getCameraPosition()} fov={50} />
         
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
         <pointLight position={[-3, 3, 3]} intensity={0.3} color="#0891b2" />
 
         <Grid
-          position={[0, gridY, 0]}
+          position={[0, getGridY(), 0]}
           args={[10, 10]}
           cellSize={0.5}
           cellThickness={0.5}
@@ -145,6 +158,20 @@ const UnifiedCanvas = ({
             initialDisplacement={params.displacement}
             isPlaying={isPlaying}
             onStateUpdate={onSpringUpdate}
+            showTrail={showTrail}
+          />
+        )}
+
+        {mode === 'coupled' && (
+          <CoupledOscillators
+            length={params.length}
+            mass={params.mass}
+            gravity={params.gravity}
+            springConstant={params.springConstant}
+            angle1={params.angle}
+            angle2={params.angle2}
+            isPlaying={isPlaying}
+            onStateUpdate={onCoupledUpdate}
             showTrail={showTrail}
           />
         )}
