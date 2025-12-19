@@ -6,8 +6,12 @@ import MotionGraphs from '@/components/simulation/MotionGraphs';
 import PhaseSpace from '@/components/simulation/PhaseSpace';
 import PresetSelector from '@/components/simulation/PresetSelector';
 import VideoExport from '@/components/simulation/VideoExport';
+import ComparisonView from '@/components/simulation/ComparisonView';
+import TutorialMode from '@/components/simulation/TutorialMode';
 import { SimulationMode, DataPoint, Preset } from '@/types/simulation';
 import { MODE_INFO } from '@/config/presets';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Columns2 } from 'lucide-react';
 
 const MODES: SimulationMode[] = ['simple', 'double', 'damped', 'spring', 'coupled'];
 
@@ -16,7 +20,10 @@ const Index = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
   const [showChaosComparison, setShowChaosComparison] = useState(true);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const graphsContainerRef = useRef<HTMLDivElement>(null);
 
   // Parameters
   const [params, setParams] = useState({
@@ -271,6 +278,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Comparison Mode */}
+      {showComparison && <ComparisonView onClose={() => setShowComparison(false)} />}
+      
+      {/* Tutorial Mode */}
+      {showTutorial && <TutorialMode currentMode={mode} onClose={() => setShowTutorial(false)} />}
+
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -282,6 +295,27 @@ const Index = () => {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {currentModeInfo.desc}
               </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTutorial(true)}
+                className="text-xs"
+              >
+                <BookOpen className="w-4 h-4 mr-1" />
+                Tutorial
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowComparison(true)}
+                className="text-xs"
+              >
+                <Columns2 className="w-4 h-4 mr-1" />
+                Compare
+              </Button>
             </div>
             
             {/* Mode tabs */}
@@ -330,6 +364,7 @@ const Index = () => {
                 <span className="text-xs text-muted-foreground">3D Simulation</span>
                 <VideoExport 
                   canvasContainerRef={canvasContainerRef}
+                  graphsContainerRef={graphsContainerRef}
                   isPlaying={isPlaying}
                 />
               </div>
@@ -372,7 +407,7 @@ const Index = () => {
               isPlaying={isPlaying}
             />
             
-            <div className="panel">
+            <div className="panel" ref={graphsContainerRef}>
               <div className="panel-header">
                 <h3 className="font-semibold text-sm">Motion Graphs</h3>
               </div>

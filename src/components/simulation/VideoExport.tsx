@@ -1,26 +1,29 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Video, Square, Download, Loader2 } from 'lucide-react';
+import { Video, Square, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
 
 interface VideoExportProps {
   canvasContainerRef: React.RefObject<HTMLDivElement>;
+  graphsContainerRef?: React.RefObject<HTMLDivElement>;
   isPlaying: boolean;
 }
 
-const VideoExport = ({ canvasContainerRef, isPlaying }: VideoExportProps) => {
+const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: VideoExportProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const animationFrameRef = useRef<number>();
+  const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const startRecording = useCallback(async () => {
     if (!canvasContainerRef.current) return;
 
     try {
-      // Find the canvas element
-      const canvas = canvasContainerRef.current.querySelector('canvas');
-      if (!canvas) {
+      const threeCanvas = canvasContainerRef.current.querySelector('canvas');
+      if (!threeCanvas) {
         toast({
           title: 'Error',
           description: 'Canvas not found. Please try again.',
@@ -29,8 +32,64 @@ const VideoExport = ({ canvasContainerRef, isPlaying }: VideoExportProps) => {
         return;
       }
 
-      // Get canvas stream
-      const stream = canvas.captureStream(30); // 30 FPS
+      // Create composite canvas for combined view
+      const compositeCanvas = document.createElement('canvas');
+      const hasGraphs = graphsContainerRef?.current;
+      
+      // Set dimensions - wider if we have graphs
+      const canvasWidth = threeCanvas.width;
+      const canvasHeight = threeCanvas.height;
+      
+      if (hasGraphs) {
+        compositeCanvas.width = canvasWidth + 400; // Extra space for graphs
+        compositeCanvas.height = Math.max(canvasHeight, 500);
+      } else {
+        compositeCanvas.width = canvasWidth;
+        compositeCanvas.height = canvasHeight;
+      }
+      
+      compositeCanvasRef.current = compositeCanvas;
+      const ctx = compositeCanvas.getContext('2d')!;
+
+      // Function to draw composite frame
+      const drawCompositeFrame = async () => {
+        // Clear with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+        
+        // Draw Three.js canvas
+        ctx.drawImage(threeCanvas, 0, 0);
+        
+        // Draw graphs if available
+        if (hasGraphs && graphsContainerRef?.current) {
+          try {
+            const graphsImage = await html2canvas(graphsContainerRef.current, {
+              backgroundColor: '#ffffff',
+              scale: 1,
+              logging: false,
+              useCORS: true,
+            });
+            ctx.drawImage(graphsImage, canvasWidth + 10, 10, 380, compositeCanvas.height - 20);
+          } catch (e) {
+            // Silently handle graph capture errors
+          }
+        }
+        
+        // Add timestamp
+        ctx.fillStyle = '#374151';
+        ctx.font = '12px system-ui';
+        ctx.fillText(`Physics Simulation - ${new Date().toLocaleTimeString()}`, 10, compositeCanvas.height - 10);
+        
+        if (isRecording) {
+          animationFrameRef.current = requestAnimationFrame(drawCompositeFrame);
+        }
+      };
+
+      // Start composite drawing
+      drawCompositeFrame();
+
+      // Get stream from composite canvas
+      const stream = compositeCanvas.captureStream(30);
 
       // Create MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
@@ -49,6 +108,9 @@ const VideoExport = ({ canvasContainerRef, isPlaying }: VideoExportProps) => {
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
         setRecordedBlob(blob);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
         toast({
           title: 'Recording Complete',
           description: 'Your video is ready to download.',
@@ -56,13 +118,13 @@ const VideoExport = ({ canvasContainerRef, isPlaying }: VideoExportProps) => {
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // Collect data every 100ms
+      mediaRecorder.start(100);
       setIsRecording(true);
       setRecordedBlob(null);
 
       toast({
         title: 'Recording Started',
-        description: 'The simulation is being recorded.',
+        description: hasGraphs ? 'Recording simulation with graphs.' : 'Recording simulation.',
       });
     } catch (error) {
       console.error('Failed to start recording:', error);
@@ -72,12 +134,15 @@ const VideoExport = ({ canvasContainerRef, isPlaying }: VideoExportProps) => {
         variant: 'destructive',
       });
     }
-  }, [canvasContainerRef]);
+  }, [canvasContainerRef, graphsContainerRef, isRecording]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     }
   }, [isRecording]);
 
