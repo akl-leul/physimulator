@@ -1,6 +1,49 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, X, BookOpen, Lightbulb, FlaskConical, Globe } from 'lucide-react';
+import { BlockMath, InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+
+// Component to render text with inline LaTeX support
+const TextWithMath = ({ text }: { text: string }) => {
+  // Pattern to match LaTeX expressions: $...$ for inline math
+  const mathPattern = /\$([^$]+)\$/g;
+  const parts: (string | { type: 'math'; content: string })[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = mathPattern.exec(text)) !== null) {
+    // Add text before the math
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    // Add the math expression
+    parts.push({ type: 'math', content: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  // If no math found, return plain text
+  if (parts.length === 1 && typeof parts[0] === 'string') {
+    return <>{text}</>;
+  }
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (typeof part === 'string') {
+          return <span key={index}>{part}</span>;
+        } else {
+          return <InlineMath key={index} math={part.content} />;
+        }
+      })}
+    </>
+  );
+};
 
 interface TutorialStep {
   id: string;
@@ -26,14 +69,14 @@ const TUTORIAL_SECTIONS = {
       {
         id: 'forces',
         title: 'Forces Acting on the Bob',
-        content: 'Two forces act on the bob: gravity (mg downward) and tension (T along the string). The component of gravity tangent to the arc provides the restoring force: F = -mg sin(θ).',
+        content: 'Two forces act on the bob: gravity ($mg$ downward) and tension ($T$ along the string). The component of gravity tangent to the arc provides the restoring force: $F = -mg \\sin(\\theta)$.',
         equation: 'F_{restoring} = -mg \\sin(\\theta)',
         tip: 'The negative sign indicates the force always points toward equilibrium.',
       },
       {
         id: 'equation',
         title: 'Equation of Motion',
-        content: 'Applying Newton\'s second law along the arc gives us the angular acceleration. For small angles, sin(θ) ≈ θ, leading to simple harmonic motion.',
+        content: 'Applying Newton\'s second law along the arc gives us the angular acceleration. For small angles, $\\sin(\\theta) \\approx \\theta$, leading to simple harmonic motion.',
         equation: '\\frac{d^2\\theta}{dt^2} = -\\frac{g}{L}\\sin(\\theta)',
         tip: 'The small-angle approximation breaks down above ~15°. Try larger angles to see non-linear effects!',
       },
@@ -74,7 +117,7 @@ const TUTORIAL_SECTIONS = {
         title: 'Damped Oscillation Equation',
         content: 'The damping force is proportional to velocity (viscous damping). This adds a velocity-dependent term to the equation of motion.',
         equation: '\\frac{d^2\\theta}{dt^2} + b\\frac{d\\theta}{dt} + \\frac{g}{L}\\sin(\\theta) = 0',
-        tip: 'The coefficient b determines damping strength. Higher b = faster decay.',
+        tip: 'The coefficient $b$ determines damping strength. Higher $b$ = faster decay.',
       },
       {
         id: 'types',
@@ -113,7 +156,7 @@ const TUTORIAL_SECTIONS = {
         title: 'Hooke\'s Law and Springs',
         content: 'A mass attached to a spring experiences a restoring force proportional to displacement from equilibrium. This is Hooke\'s Law, the foundation of spring dynamics.',
         equation: 'F = -kx',
-        tip: 'The spring constant k measures stiffness - higher k means a stiffer spring and faster oscillation.',
+        tip: 'The spring constant $k$ measures stiffness - higher $k$ means a stiffer spring and faster oscillation.',
       },
       {
         id: 'equation',
@@ -157,7 +200,7 @@ const TUTORIAL_SECTIONS = {
       {
         id: 'complexity',
         title: 'Mathematical Complexity',
-        content: 'Unlike the simple pendulum, the double pendulum requires coupled differential equations that cannot be solved analytically. The motion of each segment affects the other.',
+        content: 'Unlike the simple pendulum, the double pendulum requires coupled differential equations that cannot be solved analytically. The motion of each segment affects the other, involving terms with $\\theta_1$, $\\theta_2$, $\\dot{\\theta}_1$, and $\\dot{\\theta}_2$.',
         equation: 'Equations involve coupled terms with \\theta_1, \\theta_2, \\dot{\\theta}_1, \\dot{\\theta}_2',
         application: 'Numerical simulation is essential - this is how scientists study complex systems from weather to quantum mechanics.',
       },
@@ -200,7 +243,7 @@ const TUTORIAL_SECTIONS = {
       {
         id: 'coupling',
         title: 'The Coupling Force',
-        content: 'The spring connecting the pendulums creates a coupling force proportional to their difference in position. This allows energy to flow between them.',
+        content: 'The spring connecting the pendulums creates a coupling force proportional to their difference in position. This allows energy to flow between them, described by $F_{coupling} = -k(x_1 - x_2)$.',
         equation: 'F_{coupling} = -k(x_1 - x_2)',
         application: 'Molecular vibrations work similarly - atoms connected by chemical bonds transfer energy.',
       },
@@ -283,15 +326,15 @@ const TutorialMode = ({ currentMode, onClose }: TutorialModeProps) => {
           </h3>
           
           <p className="text-muted-foreground leading-relaxed mb-4">
-            {step.content}
+            <TextWithMath text={step.content} />
           </p>
           
           {step.equation && (
             <div className="bg-secondary/50 rounded-lg p-4 mb-4 border border-border">
-              <p className="text-xs text-muted-foreground mb-1">Key Equation:</p>
-              <p className="font-mono text-foreground text-sm">
-                {step.equation}
-              </p>
+              <p className="text-xs text-muted-foreground mb-2">Key Equation:</p>
+              <div className="overflow-x-auto">
+                <BlockMath math={step.equation} />
+              </div>
             </div>
           )}
           
@@ -300,7 +343,9 @@ const TutorialMode = ({ currentMode, onClose }: TutorialModeProps) => {
               <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-primary mb-0.5">Tip</p>
-                <p className="text-sm text-muted-foreground">{step.tip}</p>
+                <p className="text-sm text-muted-foreground">
+                  <TextWithMath text={step.tip} />
+                </p>
               </div>
             </div>
           )}
@@ -310,7 +355,9 @@ const TutorialMode = ({ currentMode, onClose }: TutorialModeProps) => {
               <Globe className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-accent mb-0.5">Real-World Application</p>
-                <p className="text-sm text-muted-foreground">{step.application}</p>
+                <p className="text-sm text-muted-foreground">
+                  <TextWithMath text={step.application} />
+                </p>
               </div>
             </div>
           )}

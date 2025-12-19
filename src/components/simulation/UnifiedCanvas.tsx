@@ -62,6 +62,132 @@ const UnifiedCanvas = ({
     return -params.length - 0.3;
   };
 
+  // Pivot Mount component - shows where pendulum attaches
+  const PivotMount = ({ position = [0, 0, 0] as [number, number, number] }) => {
+    const mountHeight = 0.8;
+    const mountWidth = 0.3;
+    const pivotRadius = 0.12;
+
+    return (
+      <group position={position}>
+        {/* Support post/beam */}
+        <mesh position={[0, mountHeight / 2, 0]}>
+          <boxGeometry args={[mountWidth, mountHeight, mountWidth * 0.6]} />
+          <meshStandardMaterial 
+            color="#475569" 
+            metalness={0.7}
+            roughness={0.3}
+          />
+        </mesh>
+
+        {/* Pivot mount base */}
+        <mesh position={[0, mountHeight, 0]}>
+          <boxGeometry args={[mountWidth * 1.5, mountWidth * 0.3, mountWidth * 1.2]} />
+          <meshStandardMaterial 
+            color="#334155" 
+            metalness={0.8}
+            roughness={0.2}
+          />
+        </mesh>
+
+        {/* Pivot point (where pendulum attaches) */}
+        <mesh position={[0, mountHeight + mountWidth * 0.15, 0]}>
+          <sphereGeometry args={[pivotRadius, 32, 32]} />
+          <meshStandardMaterial 
+            color="#0891b2" 
+            emissive="#0891b2"
+            emissiveIntensity={0.4}
+            metalness={0.9}
+            roughness={0.1}
+          />
+        </mesh>
+
+        {/* Pivot ring/holder */}
+        <mesh position={[0, mountHeight + mountWidth * 0.15, 0]}>
+          <torusGeometry args={[pivotRadius * 1.3, 0.02, 16, 32]} />
+          <meshStandardMaterial 
+            color="#64748b" 
+            metalness={0.8}
+            roughness={0.3}
+          />
+        </mesh>
+      </group>
+    );
+  };
+
+  // Walls component
+  const Walls = () => {
+    const wallSize = 12;
+    const wallHeight = 10;
+    const gridY = getGridY();
+    const floorY = gridY - 0.1;
+    const wallThickness = 0.1;
+
+    return (
+      <>
+        {/* Back wall */}
+        <mesh position={[0, wallHeight / 2 + floorY, -wallSize / 2]} rotation={[0, 0, 0]}>
+          <boxGeometry args={[wallSize, wallHeight, wallThickness]} />
+          <meshStandardMaterial 
+            color="#e2e8f0" 
+            opacity={0.3} 
+            transparent 
+            metalness={0.1}
+            roughness={0.8}
+          />
+        </mesh>
+
+        {/* Front wall (semi-transparent) */}
+        <mesh position={[0, wallHeight / 2 + floorY, wallSize / 2]} rotation={[0, 0, 0]}>
+          <boxGeometry args={[wallSize, wallHeight, wallThickness]} />
+          <meshStandardMaterial 
+            color="#e2e8f0" 
+            opacity={0.2} 
+            transparent 
+            metalness={0.1}
+            roughness={0.8}
+          />
+        </mesh>
+
+        {/* Left wall */}
+        <mesh position={[-wallSize / 2, wallHeight / 2 + floorY, 0]} rotation={[0, Math.PI / 2, 0]}>
+          <boxGeometry args={[wallSize, wallHeight, wallThickness]} />
+          <meshStandardMaterial 
+            color="#e2e8f0" 
+            opacity={0.3} 
+            transparent 
+            metalness={0.1}
+            roughness={0.8}
+          />
+        </mesh>
+
+        {/* Right wall */}
+        <mesh position={[wallSize / 2, wallHeight / 2 + floorY, 0]} rotation={[0, Math.PI / 2, 0]}>
+          <boxGeometry args={[wallSize, wallHeight, wallThickness]} />
+          <meshStandardMaterial 
+            color="#e2e8f0" 
+            opacity={0.3} 
+            transparent 
+            metalness={0.1}
+            roughness={0.8}
+          />
+        </mesh>
+
+        {/* Ceiling */}
+        <mesh position={[0, wallHeight + floorY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <boxGeometry args={[wallSize, wallSize, wallThickness]} />
+          <meshStandardMaterial 
+            color="#cbd5e1" 
+            opacity={0.2} 
+            transparent 
+            metalness={0.1}
+            roughness={0.8}
+          />
+        </mesh>
+      </>
+    );
+  };
+
   return (
     <div className="simulation-view w-full h-full">
       <Canvas>
@@ -84,6 +210,20 @@ const UnifiedCanvas = ({
           fadeStrength={1}
           followCamera={false}
         />
+
+        {/* Walls */}
+        <Walls />
+
+        {/* Pivot Mounts */}
+        {mode === 'simple' && <PivotMount position={[0, 0, 0]} />}
+        {mode === 'double' && <PivotMount position={[0, 0, 0]} />}
+        {mode === 'damped' && <PivotMount position={[0, 0, 0]} />}
+        {mode === 'coupled' && (
+          <>
+            <PivotMount position={[-1, 0, 0]} />
+            <PivotMount position={[1, 0, 0]} />
+          </>
+        )}
 
         {mode === 'simple' && (
           <SimplePendulum

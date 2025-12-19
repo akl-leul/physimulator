@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Video, Square, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
 
 interface VideoExportProps {
   canvasContainerRef: React.RefObject<HTMLDivElement>;
@@ -24,6 +25,9 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const isRecordingRef = useRef(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const graphsImageRef = useRef<HTMLImageElement | null>(null);
+  const graphsCaptureIntervalRef = useRef<number>();
+  const isCapturingGraphsRef = useRef(false);
 
   // Sync ref with state
   useEffect(() => {
@@ -35,6 +39,9 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (graphsCaptureIntervalRef.current) {
+        clearInterval(graphsCaptureIntervalRef.current);
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -88,6 +95,90 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
       const simulationHeight = TARGET_HEIGHT;
       const graphsWidth = hasGraphs ? TARGET_WIDTH * 0.3 : 0;
 
+      // Function to capture graphs using html2canvas
+      const captureGraphs = async () => {
+        // Skip if already capturing or not recording
+        if (isCapturingGraphsRef.current || !hasGraphs || !graphsContainerRef?.current || !isRecordingRef.current) {
+          return;
+        }
+        
+        isCapturingGraphsRef.current = true;
+        
+        try {
+          const graphsElement = graphsContainerRef.current;
+          
+          // Get actual visible dimensions
+          const rect = graphsElement.getBoundingClientRect();
+          const elementWidth = rect.width || graphsElement.offsetWidth;
+          const elementHeight = rect.height || graphsElement.offsetHeight;
+          
+          // Ensure element is visible before capturing
+          if (elementWidth === 0 || elementHeight === 0) {
+            console.warn('Graphs element has zero dimensions:', elementWidth, elementHeight);
+            isCapturingGraphsRef.current = false;
+            return;
+          }
+          
+          // Capture the graphs container - let html2canvas auto-detect dimensions
+          const canvas = await html2canvas(graphsElement, {
+            backgroundColor: '#ffffff',
+            scale: 2, // Higher quality
+            useCORS: true,
+            logging: false,
+            allowTaint: false,
+            removeContainer: false,
+          });
+          
+          // Check if canvas has content
+          if (canvas.width === 0 || canvas.height === 0) {
+            console.warn('Captured canvas is empty');
+            isCapturingGraphsRef.current = false;
+            return;
+          }
+          
+          // Convert to image and store in ref
+          const dataUrl = canvas.toDataURL('image/png');
+          const img = new Image();
+          
+          img.onload = () => {
+            if (img.width > 0 && img.height > 0) {
+              graphsImageRef.current = img;
+              console.log('Graphs captured successfully:', img.width, 'x', img.height);
+            } else {
+              console.warn('Loaded image has invalid dimensions');
+            }
+            isCapturingGraphsRef.current = false;
+          };
+          
+          img.onerror = (error) => {
+            console.error('Error loading graphs image:', error);
+            isCapturingGraphsRef.current = false;
+          };
+          
+          img.src = dataUrl;
+        } catch (error) {
+          console.error('Error capturing graphs:', error);
+          isCapturingGraphsRef.current = false;
+        }
+      };
+
+      // Capture graphs more frequently for smoother updates
+      const startGraphsCapture = () => {
+        // Wait a bit for the element to be fully rendered, then start capturing
+        setTimeout(() => {
+          if (isRecordingRef.current) {
+            captureGraphs();
+          }
+        }, 100);
+        
+        // Then capture every ~50ms (approximately 20fps for graphs - smooth and reliable)
+        graphsCaptureIntervalRef.current = window.setInterval(() => {
+          if (isRecordingRef.current) {
+            captureGraphs();
+          }
+        }, 50);
+      };
+
       // Function to draw composite frame
       const drawCompositeFrame = () => {
         if (!isRecordingRef.current) return;
@@ -105,36 +196,64 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
         
         // Draw graphs panel if available
         if (hasGraphs && graphsContainerRef?.current) {
-          // Create a temporary canvas for the graphs
-          const graphsElement = graphsContainerRef.current;
-          const graphsRect = graphsElement.getBoundingClientRect();
-          
-          // Draw a placeholder area for graphs info
-          ctx.fillStyle = '#f8fafc';
+          // Fill background first
+          ctx.fillStyle = '#ffffff';
           ctx.fillRect(simulationWidth, 0, graphsWidth, TARGET_HEIGHT);
           
-          // Draw border
-          ctx.strokeStyle = '#e2e8f0';
-          ctx.lineWidth = 4;
-          ctx.strokeRect(simulationWidth, 0, graphsWidth, TARGET_HEIGHT);
-          
-          // Draw "Graphs" label
-          ctx.fillStyle = '#1e293b';
-          ctx.font = 'bold 48px system-ui, sans-serif';
-          ctx.fillText('Motion Graphs', simulationWidth + 40, 80);
-          
-          // Draw simulation info
-          ctx.font = '36px system-ui, sans-serif';
-          ctx.fillStyle = '#64748b';
-          const timestamp = new Date().toLocaleTimeString();
-          ctx.fillText(`Time: ${timestamp}`, simulationWidth + 40, 150);
-          ctx.fillText('Recording in 4K UHD', simulationWidth + 40, 200);
+          if (graphsImageRef.current && graphsImageRef.current.complete && graphsImageRef.current.naturalWidth > 0) {
+            // Draw the captured graphs image, ensuring all content is visible
+            const img = graphsImageRef.current;
+            
+            // Validate image - use natural dimensions for accuracy
+            const imgWidth = img.naturalWidth || img.width;
+            const imgHeight = img.naturalHeight || img.height;
+            
+            if (imgWidth > 0 && imgHeight > 0) {
+              const imgAspect = imgWidth / imgHeight;
+              const targetAspect = graphsWidth / TARGET_HEIGHT;
+              
+              let drawWidth = graphsWidth;
+              let drawHeight = TARGET_HEIGHT;
+              let drawX = simulationWidth;
+              let drawY = 0;
+              
+              // Fit to show all content - use contain strategy (show everything)
+              if (imgAspect > targetAspect) {
+                // Image is wider than target area - fit to width, center vertically
+                drawWidth = graphsWidth;
+                drawHeight = drawWidth / imgAspect;
+                drawY = (TARGET_HEIGHT - drawHeight) / 2;
+              } else {
+                // Image is taller than target area - fit to height, center horizontally
+                drawHeight = TARGET_HEIGHT;
+                drawWidth = drawHeight * imgAspect;
+                drawX = simulationWidth + (graphsWidth - drawWidth) / 2;
+              }
+              
+              // Draw the graphs image
+              ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+            } else {
+              // Invalid image dimensions
+              ctx.fillStyle = '#64748b';
+              ctx.font = '36px system-ui, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('Invalid graph image', simulationWidth + graphsWidth / 2, TARGET_HEIGHT / 2);
+              ctx.textAlign = 'left';
+            }
+          } else {
+            // Fallback: draw placeholder while graphs are being captured
+            ctx.fillStyle = '#64748b';
+            ctx.font = '36px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Loading graphs...', simulationWidth + graphsWidth / 2, TARGET_HEIGHT / 2);
+            ctx.textAlign = 'left';
+          }
         }
         
         // Add watermark/timestamp
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.font = 'bold 32px system-ui, sans-serif';
-        ctx.fillText(`Physics Simulation Lab - 4K Recording`, 40, TARGET_HEIGHT - 40);
+        ctx.fillText(`PhySimulator - 4K Recording`, 40, TARGET_HEIGHT - 40);
         
         // Continue animation loop
         animationFrameRef.current = requestAnimationFrame(drawCompositeFrame);
@@ -143,6 +262,12 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
       // Start drawing
       isRecordingRef.current = true;
       setIsRecording(true);
+      
+      // Start capturing graphs periodically
+      if (hasGraphs) {
+        startGraphsCapture();
+      }
+      
       drawCompositeFrame();
 
       // Get stream from composite canvas at 60fps
@@ -229,9 +354,15 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
 
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
+    isCapturingGraphsRef.current = false;
     
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    if (graphsCaptureIntervalRef.current) {
+      clearInterval(graphsCaptureIntervalRef.current);
+      graphsCaptureIntervalRef.current = undefined;
     }
     
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {

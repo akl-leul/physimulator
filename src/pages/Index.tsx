@@ -277,7 +277,7 @@ const Index = () => {
   const currentModeInfo = MODE_INFO[mode];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
       {/* Comparison Mode */}
       {showComparison && <ComparisonView onClose={() => setShowComparison(false)} />}
       
@@ -285,14 +285,14 @@ const Index = () => {
       {showTutorial && <TutorialMode currentMode={mode} onClose={() => setShowTutorial(false)} />}
 
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between flex-wrap gap-3">
+      <header className="border-b border-border bg-card flex-shrink-0">
+        <div className="max-w-7xl mx-auto px-4 py-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <h1 className="text-xl font-bold text-foreground">
-                Physics Simulation Lab
+              <h1 className="text-lg font-bold text-foreground">
+                PhySimulator
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground">
                 {currentModeInfo.desc}
               </p>
             </div>
@@ -335,10 +335,10 @@ const Index = () => {
       </header>
 
       {/* Main */}
-      <main className="max-w-7xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-12 gap-4">
+      <main className="flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 py-2">
+        <div className="grid grid-cols-12 gap-3 h-full">
           {/* Left column - Controls & Presets */}
-          <aside className="col-span-12 lg:col-span-3 space-y-4">
+          <aside className="col-span-12 lg:col-span-3 space-y-3 overflow-y-auto">
             <UnifiedControls
               mode={mode}
               params={params}
@@ -358,9 +358,9 @@ const Index = () => {
           </aside>
 
           {/* Center - Canvas */}
-          <section className="col-span-12 lg:col-span-6">
-            <div className="panel overflow-hidden">
-              <div className="panel-header">
+          <section className="col-span-12 lg:col-span-6 flex flex-col gap-3 h-full">
+            <div className="panel overflow-hidden flex-[1.5] flex flex-col min-h-0">
+              <div className="panel-header flex-shrink-0">
                 <span className="text-xs text-muted-foreground">3D Simulation</span>
                 <VideoExport 
                   canvasContainerRef={canvasContainerRef}
@@ -368,7 +368,7 @@ const Index = () => {
                   isPlaying={isPlaying}
                 />
               </div>
-              <div ref={canvasContainerRef} className="h-[380px]">
+              <div ref={canvasContainerRef} className="flex-1 min-h-0">
                 <UnifiedCanvas
                   mode={mode}
                   params={params}
@@ -387,8 +387,8 @@ const Index = () => {
             </div>
 
             {/* Phase space */}
-            <div className="panel mt-4">
-              <div className="panel-body">
+            <div className="panel flex-[1] flex flex-col min-h-0">
+              <div className="panel-body flex-1 min-h-0">
                 <PhaseSpace 
                   data={phaseData} 
                   data2={(mode === 'double' && showChaosComparison) || mode === 'coupled' ? phaseData2 : undefined}
@@ -399,7 +399,7 @@ const Index = () => {
           </section>
 
           {/* Right column - Data & Graphs */}
-          <aside className="col-span-12 lg:col-span-3 space-y-4">
+          <aside className="col-span-12 lg:col-span-3 space-y-3 overflow-y-auto">
             <DataPanel
               mode={mode}
               state={state}
@@ -407,11 +407,11 @@ const Index = () => {
               isPlaying={isPlaying}
             />
             
-            <div className="panel" ref={graphsContainerRef}>
-              <div className="panel-header">
+            <div className="panel flex-1 flex flex-col min-h-0" ref={graphsContainerRef}>
+              <div className="panel-header flex-shrink-0">
                 <h3 className="font-semibold text-sm">Motion Graphs</h3>
               </div>
-              <div className="panel-body">
+              <div className="panel-body flex-1 min-h-0">
                 <MotionGraphs 
                   data={dataHistory} 
                   showComparison={(mode === 'double' && showChaosComparison) || mode === 'coupled'}
@@ -420,79 +420,6 @@ const Index = () => {
             </div>
           </aside>
         </div>
-
-        {/* Info panels */}
-        {mode === 'double' && showChaosComparison && (
-          <div className="mt-4 panel">
-            <div className="panel-body">
-              <div className="flex items-start gap-3">
-                <span className="text-lg">🦋</span>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Butterfly Effect - Sensitivity to Initial Conditions</p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    The red pendulum starts with just 0.001 radian (~0.06°) difference. This demonstrates deterministic chaos - 
-                    even tiny, unmeasurable differences explode into completely different outcomes. This is why long-term weather 
-                    prediction is fundamentally limited.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {mode === 'coupled' && (
-          <div className="mt-4 panel">
-            <div className="panel-body">
-              <div className="flex items-start gap-3">
-                <span className="text-lg">🔗</span>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Coupled Oscillators & Normal Modes</p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    When both pendulums start at the same angle, they swing together (in-phase mode). When one starts displaced, 
-                    energy transfers between them through the spring. This models molecular vibrations, coupled circuits, and 
-                    wave phenomena.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {mode === 'damped' && params.drivingAmplitude > 0 && (
-          <div className="mt-4 panel">
-            <div className="panel-body">
-              <div className="flex items-start gap-3">
-                <span className="text-lg">📈</span>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Resonance Phenomenon</p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    Natural frequency: <span className="data-value">{Math.sqrt(params.gravity / params.length).toFixed(2)} rad/s</span>. 
-                    When driving frequency approaches this value, the system absorbs maximum energy (resonance). 
-                    This caused the Tacoma Narrows Bridge collapse and is why soldiers break step crossing bridges.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {mode === 'simple' && (
-          <div className="mt-4 panel">
-            <div className="panel-body">
-              <div className="flex items-start gap-3">
-                <span className="text-lg">⏰</span>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Simple Harmonic Motion Applications</p>
-                  <p className="text-muted-foreground text-xs mt-1">
-                    Period T = 2π√(L/g) depends only on length and gravity. This made pendulum clocks revolutionary for 
-                    timekeeping, enables gravimeters to measure local gravity variations, and Foucault pendulums to demonstrate 
-                    Earth's rotation.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
