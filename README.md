@@ -3,7 +3,7 @@
 
 ![Project Banner](https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&q=80&w=2000&h=600)
 
-## 🌟 Introduction
+## Introduction
 
 **PhySimulator** is a comprehensive, open-source web application designed to bridge the gap between theoretical physics equations and visual intuition. By leveraging the power of **React**, **Three.js** (via @react-three/fiber), and modern web technologies, it provides a highly interactive laboratory for exploring classical mechanical systems.
 
@@ -15,9 +15,34 @@ Key highlights include:
 *   **Synchronized Data Analysis**: Dual-view architecture showing the mechanical system alongside live graphs of its phase space and energy metrics.
 *   **Chaos Exploration**: Specific tools designed to visualize sensitivity to initial conditions (The Butterfly Effect).
 
-## 🚀 Key Features
+## Table of Contents
 
-### 🛠️ Detailed Simulation Modules
+- [Introduction](#introduction)
+- [Key Features](#key-features)
+  - [Detailed Simulation Modules](#detailed-simulation-modules)
+  - [Advanced Analysis Suite](#advanced-analysis-suite)
+  - [Studio Tools](#studio-tools)
+- [Technical Architecture](#technical-architecture)
+  - [Core Stack](#core-stack)
+  - [System Diagram](#system-diagram)
+  - [Performance Optimizations](#performance-optimizations)
+- [Physics Behind the Scenes](#physics-behind-the-scenes)
+  - [Simple Pendulum](#simple-pendulum)
+  - [Damped Driven Oscillator](#damped-driven-oscillator)
+  - [Double Pendulum](#double-pendulum)
+  - [Coupled Oscillators](#coupled-oscillators)
+- [Numerical Integration Methods](#numerical-integration-methods)
+- [Project Structure & File Map](#project-structure--file-map)
+- [Component API Reference](#component-api-reference)
+- [Configuration Reference](#configuration-reference)
+- [Installation & Development Guide](#installation--development-guide)
+- [Browser Support & Compatibility](#browser-support--compatibility)
+- [Contributing Guidelines](#contributing-guidelines)
+- [License](#license)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
+## �🚀 Key Features
+
+### Detailed Simulation Modules
 
 #### 1. Simple Pendulum
 The ideal starting point for physics students.
@@ -47,19 +72,19 @@ Two masses connected by a spring, interacting with gravity.
 *   **Normal Modes**: visualizes the anti-symmetric and symmetric modes of vibration.
 *   **Energy Exchange**: Watch kinetic energy slosh back and forth between the two masses (beats).
 
-### 📊 Advanced Analysis Suite
+### Advanced Analysis Suite
 *   **Phase Space Plotter**: A dedicated canvas plotting Momentum ($p_\theta$) vs Position ($\theta$). Reveals limit cycles, strange attractors, and closed orbits.
 *   **Motion Graphs**: High-performance line charts (using Recharts) updating at 60fps to show $E_{total}$, $E_{kinetic}$, $E_{potential}$.
 *   **Data HUD**: Heads-up display of instantaneous values for velocity, acceleration, and forces.
 
-### 🎥 Studio Tools
+### Studio Tools
 *   **Cinematic Controls**: Slow motion (0.1x to 2.0x time scale), pause/scrub.
 *   **Video Export**: Built-in support to record the canvas to `.webm` or `.mp4` for sharing results.
 *   **Snapshots**: High-res screen capture for publications.
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 PhySimulator follows a component-based architecture designed for modularity and performance.
 
@@ -97,7 +122,7 @@ graph TD
     L --> F
 ```
 
-### 🏎️ Performance Optimizations
+### Performance Optimizations
 Physics simulations are computationally expensive. We employ several tricks to maintain 60FPS:
 
 1.  **Ref-based Animation Loop**: Physics calculations happen inside `useFrame`, modifying `useRef` directly instead of triggering React state updates. This avoids Re-rendering the component tree 60 times a second.
@@ -106,11 +131,11 @@ Physics simulations are computationally expensive. We employ several tricks to m
 
 ---
 
-## 🧮 Physics Behind the Scenes
+## Physics Behind the Scenes
 
 This project doesn't just animate arbitrary movements; it solves the real equations of motion numerically.
 
-### 1. Simple Pendulum Newton's Law
+### Simple Pendulum
 For a simple pendulum, we start with Newton's Second Law for rotation:
 
 $$ \tau = I \alpha $$
@@ -128,7 +153,7 @@ In `SimplePendulum.tsx`, this is implemented as:
 const angularAcceleration = -(gravity / length) * Math.sin(currentAngleRef.current);
 ```
 
-### 2. Damped Driven Oscillator
+### Damped Driven Oscillator
 We add two terms to the equation: a damping term proportional to velocity ($-b\dot{\theta}$) and a driving term ($F_0 \cos(\omega_d t)$).
 
 $$ m L^2 \ddot{\theta} = -mgL \sin\theta - b L^2 \dot{\theta} + L F_0 \cos(\omega_d t) $$
@@ -142,7 +167,7 @@ This allows us to simulate:
 *   **Overdamping**: The system returns to equilibrium without oscillating.
 *   **Driven Resonance**: Large amplitude oscillations when $\omega_d \approx \sqrt{g/L}$.
 
-### 3. Double Pendulum Lagrangian
+### Double Pendulum
 For the double pendulum, Newton's laws become messy. We use Lagrangian mechanics ($\mathcal{L} = T - V$).
 
 **Kinetic Energy ($T$):**
@@ -168,7 +193,7 @@ const den = L1 * (2 * m1 + m2 - m2 * Math.cos(2 * t1 - 2 * t2));
 const alpha1 = (num1 + num2 + num3 * num4) / den;
 ```
 
-### 4. Coupled Oscillators (Normal Modes)
+### Coupled Oscillators
 For two pendulums coupled by a spring (constant $k$), the coupling adds a potential term $V_{spring} = \frac{1}{2}k(\Delta x)^2 \approx \frac{1}{2}kL^2(\theta_2-\theta_1)^2$.
 
 The equations of motion become:
@@ -180,7 +205,7 @@ This linear approximation allows us to see beating phenomena where energy transf
 
 ---
 
-## 💻 Numerical Integration Methods
+## Numerical Integration Methods
 
 Understanding how we solve differential equations in code.
 
@@ -206,7 +231,7 @@ Takes 4 samples of the slope to estimate the next step.
 
 ---
 
-## 📂 Project Structure & File Map
+## Project Structure & File Map
 
 Here is a detailed breakdown of the source code organization to help you navigate:
 
@@ -250,7 +275,7 @@ d:/physimulator/
 
 ---
 
-## 📐 Component API Reference
+## Component API Reference
 
 Detailed documentation for the core simulation components.
 
@@ -296,7 +321,7 @@ A pure UI component that renders live data streams using Recharts.
 
 ---
 
-## ⚙️ Configuration Reference
+## Configuration Reference
 
 A guide to the configuration files powering the app.
 
@@ -332,7 +357,7 @@ Customizes the design system.
 
 ---
 
-## 💿 Installation & Development Guide
+## Installation & Development Guide
 
 ### Prerequisites
 *   **Operating System**: Windows, macOS, or Linux.
@@ -378,7 +403,7 @@ Customizes the design system.
 
 ---
 
-## 🌐 Browser Support & Compatibility
+## Browser Support & Compatibility
 
 PhySimulator pushes the boundaries of web graphics. Ensure your environment meets these standards:
 
@@ -393,7 +418,7 @@ PhySimulator pushes the boundaries of web graphics. Ensure your environment meet
 
 ---
 
-## 🤝 Contributing Guidelines
+## Contributing Guidelines
 
 We love external contributions! Whether it's a bug fix, new physics system, or UI polish.
 
@@ -411,14 +436,11 @@ We love external contributions! Whether it's a bug fix, new physics system, or U
 *   **Types**: Avoid using `any`. Define interfaces in `src/types/` if a type is used across multiple files.
 *   **Components**: Keep components small. If a file exceeds 300 lines, consider breaking it up.
 
-### Community & Contact
-*   **Discord**: [Join our Physics Dev Server](https://discord.gg/placeholder)
-*   **Twitter**: [@PhySimulator](https://twitter.com/placeholder)
-*   **Email**: maintainers@physimulator.org
+
 
 ---
 
-## 📝 License
+## License
 
 This project is licensed under the **MIT License**.
 
@@ -444,7 +466,7 @@ See the full `LICENSE` file for details.
 
 ---
 
-## ❓ FAQ & Troubleshooting
+## FAQ & Troubleshooting
 
 **Q: My simulation exploded/NaN!**
 A: This happens if the system energy exceeds numerical stability limits.
