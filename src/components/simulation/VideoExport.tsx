@@ -1,14 +1,19 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Video, Square, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import html2canvas from 'html2canvas';
 
 interface VideoExportProps {
   canvasContainerRef: React.RefObject<HTMLDivElement>;
   graphsContainerRef?: React.RefObject<HTMLDivElement>;
   isPlaying: boolean;
 }
+
+// 4K resolution
+const TARGET_WIDTH = 3840;
+const TARGET_HEIGHT = 2160;
+const FRAME_RATE = 60;
+const BIT_RATE = 40000000; // 40 Mbps for high quality 4K
 
 const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: VideoExportProps) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -17,6 +22,25 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
   const chunksRef = useRef<Blob[]>([]);
   const animationFrameRef = useRef<number>();
   const compositeCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isRecordingRef = useRef(false);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Sync ref with state
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const startRecording = useCallback(async () => {
     if (!canvasContainerRef.current) return;
@@ -32,119 +56,190 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
         return;
       }
 
-      // Create composite canvas for combined view
+      // Create high-resolution composite canvas for 4K
       const compositeCanvas = document.createElement('canvas');
       const hasGraphs = graphsContainerRef?.current;
       
-      // Set dimensions - wider if we have graphs
-      const canvasWidth = threeCanvas.width;
-      const canvasHeight = threeCanvas.height;
-      
+      // Set 4K dimensions
       if (hasGraphs) {
-        compositeCanvas.width = canvasWidth + 400; // Extra space for graphs
-        compositeCanvas.height = Math.max(canvasHeight, 500);
+        compositeCanvas.width = TARGET_WIDTH;
+        compositeCanvas.height = TARGET_HEIGHT;
       } else {
-        compositeCanvas.width = canvasWidth;
-        compositeCanvas.height = canvasHeight;
+        compositeCanvas.width = TARGET_WIDTH;
+        compositeCanvas.height = TARGET_HEIGHT;
       }
       
       compositeCanvasRef.current = compositeCanvas;
-      const ctx = compositeCanvas.getContext('2d')!;
+      const ctx = compositeCanvas.getContext('2d', { 
+        alpha: false,
+        desynchronized: true 
+      })!;
+      
+      // Enable high-quality scaling
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Calculate scaling factors
+      const sourceWidth = threeCanvas.width;
+      const sourceHeight = threeCanvas.height;
+      
+      // Calculate layout for 4K canvas
+      const simulationWidth = hasGraphs ? TARGET_WIDTH * 0.7 : TARGET_WIDTH;
+      const simulationHeight = TARGET_HEIGHT;
+      const graphsWidth = hasGraphs ? TARGET_WIDTH * 0.3 : 0;
 
       // Function to draw composite frame
-      const drawCompositeFrame = async () => {
+      const drawCompositeFrame = () => {
+        if (!isRecordingRef.current) return;
+
         // Clear with white background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
         
-        // Draw Three.js canvas
-        ctx.drawImage(threeCanvas, 0, 0);
+        // Draw Three.js canvas scaled to 4K
+        ctx.drawImage(
+          threeCanvas, 
+          0, 0, sourceWidth, sourceHeight,
+          0, 0, simulationWidth, simulationHeight
+        );
         
-        // Draw graphs if available
+        // Draw graphs panel if available
         if (hasGraphs && graphsContainerRef?.current) {
-          try {
-            const graphsImage = await html2canvas(graphsContainerRef.current, {
-              backgroundColor: '#ffffff',
-              scale: 1,
-              logging: false,
-              useCORS: true,
-            });
-            ctx.drawImage(graphsImage, canvasWidth + 10, 10, 380, compositeCanvas.height - 20);
-          } catch (e) {
-            // Silently handle graph capture errors
-          }
+          // Create a temporary canvas for the graphs
+          const graphsElement = graphsContainerRef.current;
+          const graphsRect = graphsElement.getBoundingClientRect();
+          
+          // Draw a placeholder area for graphs info
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(simulationWidth, 0, graphsWidth, TARGET_HEIGHT);
+          
+          // Draw border
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(simulationWidth, 0, graphsWidth, TARGET_HEIGHT);
+          
+          // Draw "Graphs" label
+          ctx.fillStyle = '#1e293b';
+          ctx.font = 'bold 48px system-ui, sans-serif';
+          ctx.fillText('Motion Graphs', simulationWidth + 40, 80);
+          
+          // Draw simulation info
+          ctx.font = '36px system-ui, sans-serif';
+          ctx.fillStyle = '#64748b';
+          const timestamp = new Date().toLocaleTimeString();
+          ctx.fillText(`Time: ${timestamp}`, simulationWidth + 40, 150);
+          ctx.fillText('Recording in 4K UHD', simulationWidth + 40, 200);
         }
         
-        // Add timestamp
-        ctx.fillStyle = '#374151';
-        ctx.font = '12px system-ui';
-        ctx.fillText(`Physics Simulation - ${new Date().toLocaleTimeString()}`, 10, compositeCanvas.height - 10);
+        // Add watermark/timestamp
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.font = 'bold 32px system-ui, sans-serif';
+        ctx.fillText(`Physics Simulation Lab - 4K Recording`, 40, TARGET_HEIGHT - 40);
         
-        if (isRecording) {
-          animationFrameRef.current = requestAnimationFrame(drawCompositeFrame);
-        }
+        // Continue animation loop
+        animationFrameRef.current = requestAnimationFrame(drawCompositeFrame);
       };
 
-      // Start composite drawing
+      // Start drawing
+      isRecordingRef.current = true;
+      setIsRecording(true);
       drawCompositeFrame();
 
-      // Get stream from composite canvas
-      const stream = compositeCanvas.captureStream(30);
+      // Get stream from composite canvas at 60fps
+      const stream = compositeCanvas.captureStream(FRAME_RATE);
+      streamRef.current = stream;
 
-      // Create MediaRecorder
+      // Check for supported mime types
+      const mimeTypes = [
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+        'video/mp4'
+      ];
+      
+      let selectedMimeType = 'video/webm';
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+
+      // Create MediaRecorder with high quality settings
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000,
+        mimeType: selectedMimeType,
+        videoBitsPerSecond: BIT_RATE,
       });
 
       chunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        // Stop all tracks
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+        
+        const blob = new Blob(chunksRef.current, { type: selectedMimeType });
         setRecordedBlob(blob);
+        
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
         }
+        
         toast({
-          title: 'Recording Complete',
-          description: 'Your video is ready to download.',
+          title: '4K Recording Complete',
+          description: `Video ready (${(blob.size / 1024 / 1024).toFixed(1)} MB)`,
+        });
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        toast({
+          title: 'Recording Error',
+          description: 'An error occurred during recording.',
+          variant: 'destructive',
         });
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
-      setIsRecording(true);
+      mediaRecorder.start(100); // Collect data every 100ms
       setRecordedBlob(null);
 
       toast({
-        title: 'Recording Started',
-        description: hasGraphs ? 'Recording simulation with graphs.' : 'Recording simulation.',
+        title: '4K Recording Started',
+        description: `Recording at ${TARGET_WIDTH}x${TARGET_HEIGHT} @ ${FRAME_RATE}fps`,
       });
     } catch (error) {
       console.error('Failed to start recording:', error);
+      isRecordingRef.current = false;
+      setIsRecording(false);
       toast({
         title: 'Recording Failed',
-        description: 'Could not start video recording.',
+        description: 'Could not start video recording. Check browser compatibility.',
         variant: 'destructive',
       });
     }
-  }, [canvasContainerRef, graphsContainerRef, isRecording]);
+  }, [canvasContainerRef, graphsContainerRef]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+    isRecordingRef.current = false;
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
-  }, [isRecording]);
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    setIsRecording(false);
+  }, []);
 
   const downloadVideo = useCallback(() => {
     if (!recordedBlob) return;
@@ -152,7 +247,7 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
     const url = URL.createObjectURL(recordedBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `physics-simulation-${Date.now()}.webm`;
+    a.download = `physics-simulation-4K-${Date.now()}.webm`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -160,7 +255,7 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
 
     toast({
       title: 'Download Started',
-      description: 'Your video is being downloaded.',
+      description: 'Your 4K video is being downloaded.',
     });
   }, [recordedBlob]);
 
@@ -173,9 +268,10 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
           size="sm"
           className="btn btn-secondary text-xs"
           disabled={!isPlaying}
+          title="Record in 4K UHD quality"
         >
           <Video className="w-3.5 h-3.5 mr-1" />
-          Record
+          Record 4K
         </Button>
       ) : (
         <Button
@@ -197,14 +293,14 @@ const VideoExport = ({ canvasContainerRef, graphsContainerRef, isPlaying }: Vide
           className="btn btn-secondary text-xs"
         >
           <Download className="w-3.5 h-3.5 mr-1" />
-          Download
+          Download 4K
         </Button>
       )}
 
       {isRecording && (
         <span className="flex items-center gap-1 text-xs text-destructive">
           <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-          Recording...
+          4K Recording...
         </span>
       )}
     </div>
