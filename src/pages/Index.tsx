@@ -290,7 +290,7 @@ const Index = () => {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <h1 className="text-lg font-bold text-foreground">
-                PhySimulator
+              <img src="/primary-logo.webp" alt="Logo" className="inline-block w-8 h-8 ml-2 mb-1" />  Shaggar Institute of Technology
               </h1>
               <p className="text-xs text-muted-foreground">
                 {currentModeInfo.desc}
