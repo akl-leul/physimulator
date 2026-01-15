@@ -483,5 +483,5 @@ A: Not yet implemented in the UI, but you can access the `state` object in the c
 
 ---
 
-*Documentation generated automatically by the PhySimulator Dev Team.*
+*Documentation generated automatically by Leul Ayfokru Kassahun*
 *Last updated: December 2025*
