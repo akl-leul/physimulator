@@ -68,7 +68,7 @@ const SimulationPanel = ({ config, isPlaying, showTrail, label }: SimulationPane
             sectionColor="hsl(220, 20%, 75%)"
             fadeDistance={15}
           />
-          
+
           {config.mode === 'simple' && (
             <SimplePendulum
               length={config.length}
@@ -77,11 +77,11 @@ const SimulationPanel = ({ config, isPlaying, showTrail, label }: SimulationPane
               angle={config.angle}
               isPlaying={isPlaying}
               showTrail={showTrail}
-              onStateUpdate={() => {}}
+              onStateUpdate={() => { }}
               angularVelocityRef={velocityRef}
             />
           )}
-          
+
           {config.mode === 'damped' && (
             <DampedPendulum
               length={config.length}
@@ -93,10 +93,10 @@ const SimulationPanel = ({ config, isPlaying, showTrail, label }: SimulationPane
               drivingAmplitude={config.drivingAmplitude}
               isPlaying={isPlaying}
               showTrail={showTrail}
-              onStateUpdate={() => {}}
+              onStateUpdate={() => { }}
             />
           )}
-          
+
           {config.mode === 'spring' && (
             <MassSpring
               springConstant={config.springConstant}
@@ -107,10 +107,10 @@ const SimulationPanel = ({ config, isPlaying, showTrail, label }: SimulationPane
               initialDisplacement={0.5}
               isPlaying={isPlaying}
               showTrail={showTrail}
-              onStateUpdate={() => {}}
+              onStateUpdate={() => { }}
             />
           )}
-          
+
           {config.mode === 'double' && (
             <DoublePendulum
               length1={config.length}
@@ -122,10 +122,10 @@ const SimulationPanel = ({ config, isPlaying, showTrail, label }: SimulationPane
               angle2={config.angle * 0.8}
               isPlaying={isPlaying}
               showTrail={showTrail}
-              onStateUpdate={() => {}}
+              onStateUpdate={() => { }}
             />
           )}
-          
+
           <OrbitControls
             enablePan={false}
             enableZoom={true}
@@ -146,12 +146,12 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showTrail, setShowTrail] = useState(true);
   const [resetKey, setResetKey] = useState(0);
-  
+
   const [leftConfig, setLeftConfig] = useState<ComparisonConfig>({ ...defaultConfig });
-  const [rightConfig, setRightConfig] = useState<ComparisonConfig>({ 
-    ...defaultConfig, 
+  const [rightConfig, setRightConfig] = useState<ComparisonConfig>({
+    ...defaultConfig,
     mode: 'damped',
-    damping: 0.2 
+    damping: 0.2
   });
 
   const handleReset = () => {
@@ -168,38 +168,38 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background">
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       <div className="h-full flex flex-col">
         {/* Header */}
-        <header className="border-b border-border bg-card px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
+        <header className="border-b border-border bg-card px-4 py-3 sticky top-0 z-10">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-center sm:text-left">
               <h2 className="text-lg font-semibold text-foreground">Comparison Mode</h2>
-              <p className="text-xs text-muted-foreground">Run two simulations side by side to compare behaviors</p>
+              <p className="text-xs text-muted-foreground sm:block hidden">Run two simulations side by side to compare behaviors</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
               <Button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="btn btn-primary"
+                className="btn btn-primary h-8 sm:h-9"
                 size="sm"
               >
                 {isPlaying ? <Pause className="w-4 h-4 mr-1" /> : <Play className="w-4 h-4 mr-1" />}
                 {isPlaying ? 'Pause' : 'Start'}
               </Button>
-              <Button onClick={handleReset} variant="outline" size="sm">
+              <Button onClick={handleReset} variant="outline" size="sm" className="h-8 sm:h-9">
                 <RotateCcw className="w-4 h-4 mr-1" />
                 Reset
               </Button>
-              <Button onClick={onClose} variant="outline" size="sm">
-                Exit Comparison
+              <Button onClick={onClose} variant="outline" size="sm" className="h-8 sm:h-9">
+                Exit
               </Button>
             </div>
           </div>
         </header>
 
         {/* Main content */}
-        <div className="flex-1 p-4 overflow-auto">
-          <div className="grid grid-cols-2 gap-4" key={resetKey}>
+        <div className="flex-1 p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" key={resetKey}>
             {/* Left simulation */}
             <div className="space-y-3">
               <SimulationPanel
@@ -208,7 +208,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                 showTrail={showTrail}
                 label="Simulation A"
               />
-              
+
               <div className="panel">
                 <div className="panel-body space-y-3">
                   <div className="flex items-center gap-3">
@@ -223,15 +223,15 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                       <SelectContent>
                         {COMPARISON_MODES.map(m => (
                           <SelectItem key={m} value={m} className="text-xs">
-                            {m === 'simple' ? 'Simple Pendulum' : 
-                             m === 'damped' ? 'Damped/Driven' : 
-                             m === 'spring' ? 'Mass-Spring' : 'Double Pendulum'}
+                            {m === 'simple' ? 'Simple Pendulum' :
+                              m === 'damped' ? 'Damped/Driven' :
+                                m === 'spring' ? 'Mass-Spring' : 'Double Pendulum'}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span>Length: {leftConfig.length.toFixed(2)} m</span>
@@ -244,7 +244,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                       step={0.1}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span>Initial Angle: {(leftConfig.angle * 180 / Math.PI).toFixed(0)}°</span>
@@ -257,7 +257,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                       step={0.05}
                     />
                   </div>
-                  
+
                   {leftConfig.mode === 'damped' && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
@@ -275,7 +275,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                 </div>
               </div>
             </div>
-            
+
             {/* Right simulation */}
             <div className="space-y-3">
               <SimulationPanel
@@ -284,7 +284,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                 showTrail={showTrail}
                 label="Simulation B"
               />
-              
+
               <div className="panel">
                 <div className="panel-body space-y-3">
                   <div className="flex items-center gap-3">
@@ -299,15 +299,15 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                       <SelectContent>
                         {COMPARISON_MODES.map(m => (
                           <SelectItem key={m} value={m} className="text-xs">
-                            {m === 'simple' ? 'Simple Pendulum' : 
-                             m === 'damped' ? 'Damped/Driven' : 
-                             m === 'spring' ? 'Mass-Spring' : 'Double Pendulum'}
+                            {m === 'simple' ? 'Simple Pendulum' :
+                              m === 'damped' ? 'Damped/Driven' :
+                                m === 'spring' ? 'Mass-Spring' : 'Double Pendulum'}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span>Length: {rightConfig.length.toFixed(2)} m</span>
@@ -320,7 +320,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                       step={0.1}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span>Initial Angle: {(rightConfig.angle * 180 / Math.PI).toFixed(0)}°</span>
@@ -333,7 +333,7 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
                       step={0.05}
                     />
                   </div>
-                  
+
                   {rightConfig.mode === 'damped' && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
@@ -352,15 +352,15 @@ const ComparisonView = ({ onClose }: ComparisonViewProps) => {
               </div>
             </div>
           </div>
-          
+
           {/* Comparison insights */}
           <div className="mt-4 panel">
             <div className="panel-body">
               <h3 className="font-semibold text-sm mb-2">Comparison Insights</h3>
-              <div className="grid grid-cols-3 gap-4 text-xs text-muted-foreground">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-muted-foreground">
                 <div>
                   <p className="font-medium text-foreground">Length Effect</p>
-                  <p>Longer pendulums have longer periods (T ∝ √L). Compare different lengths to see this relationship.</p>
+                  <p>{"Longer pendulums have longer periods ($T \propto \\sqrt{L}$). Compare different lengths to see this relationship."}</p>
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Damping Effect</p>

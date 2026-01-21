@@ -62,7 +62,7 @@ const Index = () => {
   const [dataHistory, setDataHistory] = useState<DataPoint[]>([]);
   const [phaseData, setPhaseData] = useState<Array<{ angle: number; velocity: number; time: number }>>([]);
   const [phaseData2, setPhaseData2] = useState<Array<{ angle: number; velocity: number; time: number }>>([]);
-  
+
   const timeRef = useRef(0);
   const lastUpdateRef = useRef(0);
   const angularVelocityRef = useRef(0);
@@ -74,7 +74,7 @@ const Index = () => {
   const handlePresetSelect = (preset: Preset) => {
     setIsPlaying(false);
     setMode(preset.mode);
-    
+
     // Apply preset params
     setParams(prev => ({
       ...prev,
@@ -114,7 +114,7 @@ const Index = () => {
 
   const handleSimpleUpdate = useCallback((angle: number, velocity: number) => {
     setState(prev => ({ ...prev, angle, velocity }));
-    
+
     const now = performance.now();
     const dt = (now - lastUpdateRef.current) / 1000;
     lastUpdateRef.current = now;
@@ -131,9 +131,9 @@ const Index = () => {
   }, [calculateEnergy]);
 
   const handleDoubleUpdate = useCallback((s: { angle1: number; angle2: number; velocity1: number; velocity2: number }) => {
-    setState(prev => ({ 
-      ...prev, 
-      angle: s.angle1, 
+    setState(prev => ({
+      ...prev,
+      angle: s.angle1,
       velocity: s.velocity1,
       angle2: s.angle2,
       velocity2: s.velocity2,
@@ -147,10 +147,10 @@ const Index = () => {
     const { ke, pe } = calculateEnergy(s.angle1, s.velocity1);
 
     setDataHistory(prev => {
-      const entry: DataPoint = { 
-        time: timeRef.current, 
-        angle: s.angle1, 
-        velocity: s.velocity1, 
+      const entry: DataPoint = {
+        time: timeRef.current,
+        angle: s.angle1,
+        velocity: s.velocity1,
         ke, pe,
         angle2: s.angle2,
         velocity2: s.velocity2,
@@ -162,8 +162,8 @@ const Index = () => {
   }, [calculateEnergy]);
 
   const handleDouble2Update = useCallback((s: { angle1: number; angle2: number; velocity1: number; velocity2: number }) => {
-    setState2({ 
-      angle: s.angle1, 
+    setState2({
+      angle: s.angle1,
       velocity: s.velocity1,
       angle2: s.angle2,
       velocity2: s.velocity2,
@@ -208,9 +208,9 @@ const Index = () => {
   }, [calculateEnergy]);
 
   const handleCoupledUpdate = useCallback((s: { angle1: number; angle2: number; velocity1: number; velocity2: number }) => {
-    setState(prev => ({ 
-      ...prev, 
-      angle: s.angle1, 
+    setState(prev => ({
+      ...prev,
+      angle: s.angle1,
       velocity: s.velocity1,
       angle2: s.angle2,
       velocity2: s.velocity2,
@@ -224,10 +224,10 @@ const Index = () => {
     const { ke, pe } = calculateEnergy(s.angle1, s.velocity1);
 
     setDataHistory(prev => {
-      const entry: DataPoint = { 
-        time: timeRef.current, 
-        angle: s.angle1, 
-        velocity: s.velocity1, 
+      const entry: DataPoint = {
+        time: timeRef.current,
+        angle: s.angle1,
+        velocity: s.velocity1,
         ke, pe,
         angle2: s.angle2,
         velocity2: s.velocity2,
@@ -277,68 +277,72 @@ const Index = () => {
   const currentModeInfo = MODE_INFO[mode];
 
   return (
-    <div className="h-screen overflow-hidden bg-background flex flex-col">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-background flex flex-col">
       {/* Comparison Mode */}
       {showComparison && <ComparisonView onClose={() => setShowComparison(false)} />}
-      
+
       {/* Tutorial Mode */}
       {showTutorial && <TutorialMode currentMode={mode} onClose={() => setShowTutorial(false)} />}
 
       {/* Header */}
       <header className="border-b border-border bg-card flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 py-2">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <h1 className="text-lg font-bold text-foreground">
-              <img src="/primary-logo.webp" alt="Logo" className="inline-block w-8 h-8 ml-2 mb-1" />  Shaggar Institute of Technology
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {currentModeInfo.desc}
-              </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <img src="/primary-logo.webp" alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10" />
+              <div>
+                <h1 className="text-sm sm:text-lg font-bold text-foreground leading-tight">
+                  Shaggar Institute of Technology
+                </h1>
+                <p className="hidden sm:block text-[10px] sm:text-xs text-muted-foreground">
+                  {currentModeInfo.desc}
+                </p>
+              </div>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTutorial(true)}
-                className="text-xs"
-              >
-                <BookOpen className="w-4 h-4 mr-1" />
-                Tutorial
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowComparison(true)}
-                className="text-xs"
-              >
-                <Columns2 className="w-4 h-4 mr-1" />
-                Compare
-              </Button>
-            </div>
-            
-            {/* Mode tabs */}
-            <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1">
-              {MODES.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => handleModeChange(m)}
-                  className={`mode-tab ${mode === m ? 'mode-tab-active' : 'mode-tab-inactive'}`}
+
+            <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTutorial(true)}
+                  className="text-[10px] sm:text-xs h-8 px-2"
                 >
-                  {MODE_INFO[m].label}
-                </button>
-              ))}
+                  <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  Tutorial
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowComparison(true)}
+                  className="text-[10px] sm:text-xs h-8 px-2"
+                >
+                  <Columns2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  Compare
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1 overflow-x-auto no-scrollbar max-w-[150px] sm:max-w-none">
+                {MODES.map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => handleModeChange(m)}
+                    className={`mode-tab whitespace-nowrap text-[10px] sm:text-sm px-2 py-1 ${mode === m ? 'mode-tab-active' : 'mode-tab-inactive'}`}
+                  >
+                    {MODE_INFO[m].label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 py-2">
-        <div className="grid grid-cols-12 gap-3 h-full">
+      <main className="flex-1 lg:overflow-hidden max-w-7xl mx-auto w-full px-4 py-2">
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:h-full">
           {/* Left column - Controls & Presets */}
-          <aside className="col-span-12 lg:col-span-3 space-y-3 overflow-y-auto">
+          <aside className="order-2 lg:order-1 col-span-12 lg:col-span-3 space-y-3 lg:overflow-y-auto">
             <UnifiedControls
               mode={mode}
               params={params}
@@ -351,18 +355,18 @@ const Index = () => {
               onTrailToggle={setShowTrail}
               onChaosToggle={setShowChaosComparison}
             />
-            <PresetSelector 
-              currentMode={mode} 
+            <PresetSelector
+              currentMode={mode}
               onSelectPreset={handlePresetSelect}
             />
           </aside>
 
           {/* Center - Canvas */}
-          <section className="col-span-12 lg:col-span-6 flex flex-col gap-3 h-full">
+          <section className="order-1 lg:order-2 col-span-12 lg:col-span-6 flex flex-col gap-3 min-h-[400px] lg:h-full">
             <div className="panel overflow-hidden flex-[1.5] flex flex-col min-h-0">
               <div className="panel-header flex-shrink-0">
                 <span className="text-xs text-muted-foreground">3D Simulation</span>
-                <VideoExport 
+                <VideoExport
                   canvasContainerRef={canvasContainerRef}
                   graphsContainerRef={graphsContainerRef}
                   isPlaying={isPlaying}
@@ -389,8 +393,8 @@ const Index = () => {
             {/* Phase space */}
             <div className="panel flex-[1] flex flex-col min-h-0">
               <div className="panel-body flex-1 min-h-0">
-                <PhaseSpace 
-                  data={phaseData} 
+                <PhaseSpace
+                  data={phaseData}
                   data2={(mode === 'double' && showChaosComparison) || mode === 'coupled' ? phaseData2 : undefined}
                   title={mode === 'spring' ? 'Phase Space (x vs v)' : 'Phase Space (θ vs ω)'}
                 />
@@ -399,21 +403,21 @@ const Index = () => {
           </section>
 
           {/* Right column - Data & Graphs */}
-          <aside className="col-span-12 lg:col-span-3 space-y-3 overflow-y-auto">
+          <aside className="order-3 lg:order-3 col-span-12 lg:col-span-3 space-y-3 lg:overflow-y-auto">
             <DataPanel
               mode={mode}
               state={state}
               params={params}
               isPlaying={isPlaying}
             />
-            
+
             <div className="panel flex-1 flex flex-col min-h-0" ref={graphsContainerRef}>
               <div className="panel-header flex-shrink-0">
                 <h3 className="font-semibold text-sm">Motion Graphs</h3>
               </div>
               <div className="panel-body flex-1 min-h-0">
-                <MotionGraphs 
-                  data={dataHistory} 
+                <MotionGraphs
+                  data={dataHistory}
                   showComparison={(mode === 'double' && showChaosComparison) || mode === 'coupled'}
                 />
               </div>
